@@ -15,16 +15,16 @@ Luồng chính bắt đầu tại Envoy Gateway, đi vào API và Kafka, sau đ�
 |---|---|---|---|
 | IP01 | API → Kafka | `traceparent`, `idempotency-key`, topic `data.raw` | **UNVERIFIED:** evidence live đã được loại bỏ vì không thể tái tạo trên máy hiện tại |
 | IP02 | Kafka → Airflow | DAG `lab28_ingestion_pipeline` | **UNVERIFIED:** máy local không đủ tài nguyên để chạy full profile |
-| IP03 | Pipeline → Delta Lake | loại trùng trước khi ghi, transaction log | **Ready:** `documents` v0 có 1 dòng; `feedback` từ v0/2 dòng lên v1/3 dòng |
+| IP03 | Pipeline → Delta Lake | loại trùng trước khi ghi, transaction log | **UNVERIFIED live:** logic `dedupe_latest` đã đạt fast suite |
 | IP04 | Delta → Feast | feature service `asker_serving_v1` | **UNVERIFIED:** evidence live đã được loại bỏ vì cần Airflow/Spark/Feast full profile |
-| IP05 | Dữ liệu → Qdrant | hybrid retrieval, point ID tất định | **Ready:** collection có 13 point và truy vấn trả kết quả |
-| IP06 | Đánh giá → MLflow | Model Registry và alias `champion` | **Ready:** `lab28-rag-release` version 2 là champion |
-| IP07 | RAG → vLLM | API tương thích OpenAI và identity probe | **Not ready:** endpoint không kết nối được (`ConnectError`) |
-| IP08 | Client → Envoy | routing và rate limit | **Có evidence riêng:** 13 request được nhận, 17 request bị giới hạn 429; integration report vẫn ghi unverified |
-| IP09 | Services → Prometheus/Grafana | scrape metrics, dashboard, alert rule | **Có evidence riêng:** 9 target up, target vLLM optional down; integration report vẫn ghi unverified |
-| IP10 | API → tracing backend | truyền W3C trace context | **Chưa đủ:** evidence chỉ có một span `GET` từ `lab28-api`, chưa chứng minh trace end-to-end |
+| IP05 | Dữ liệu → Qdrant | hybrid retrieval, point ID tất định | **UNVERIFIED live:** chưa chạy Qdrant trên môi trường hiện tại |
+| IP06 | Đánh giá → MLflow | Model Registry và alias `champion` | **UNVERIFIED live:** chưa chạy MLflow release trên môi trường hiện tại |
+| IP07 | RAG → vLLM | API tương thích OpenAI và identity probe | **UNVERIFIED:** không có GPU endpoint được xác minh |
+| IP08 | Client → Envoy | routing và rate limit | **UNVERIFIED live:** chưa chạy gateway trên môi trường hiện tại |
+| IP09 | Services → Prometheus/Grafana | scrape metrics, dashboard, alert rule | **UNVERIFIED live:** chưa chạy monitoring stack trên môi trường hiện tại |
+| IP10 | API → tracing backend | truyền W3C trace context | **UNVERIFIED live:** logic truyền header đã đạt fast suite nhưng chưa có trace end-to-end |
 
-`evidence/integration-report.json` được tạo từ lần chạy trước và ghi 5 điểm passing, 4 điểm unverified, IP07 not-ready, điểm số 83 và `ready=false`. Sau khi loại bỏ evidence IP01/IP04 không thể tái tạo, báo cáo JSON này chỉ còn giá trị tham khảo lịch sử, không đại diện cho trạng thái kiểm chứng hiện tại. Trong bộ evidence hiện tại, IP01 và IP04 phải được chấm là **UNVERIFIED** cho đến khi chạy lại J1 trên máy đủ tài nguyên.
+Bằng chứng thuộc lần làm hiện tại gồm kết quả preflight và fast suite. Preflight chọn chế độ `browser-fallback`, vì vậy toàn bộ integration point cần dịch vụ live được giữ ở trạng thái **UNVERIFIED** cho đến khi chạy trên máy đủ tài nguyên.
 
 ## 3. Phần mã đã hoàn thiện
 
@@ -82,9 +82,7 @@ Repo hiện chỉ ghi nhận `ConnectError` cho IP07; chưa có chuỗi evidence
 
 ## 7. Hiệu năng
 
-`evidence/load-profile.json` ghi 50 request tới `/ready` với concurrency 4: 49 phản hồi HTTP 200 và 1 lỗi. P50 là 2558.21 ms, P95 là 4296.35 ms và P99 là 10163.38 ms. Nút thắt hợp lý nhất là các health check đồng bộ tới dependency, đặc biệt thời gian chờ kết nối vLLM và probe Kafka. Hướng xử lý là cache snapshot readiness trong thời gian ngắn, cập nhật bằng tác vụ nền và đặt timeout riêng cho từng dependency.
-
-Các số liệu này chỉ phản ánh máy local và endpoint `/ready`; chúng không đại diện cho capacity production hoặc hiệu năng `/api/v1/ask`.
+Máy hiện tại không chạy được Docker full profile nên chưa có load profile hợp lệ cho `/ready` hoặc `/api/v1/ask`. Kết quả hiệu năng được giữ ở trạng thái **UNVERIFIED**. Khi có môi trường phù hợp, cần ghi tổng số request, concurrency, status count, P50/P95/P99 và tài nguyên máy; không suy ra capacity production từ kết quả laptop.
 
 ## 8. GitOps và rollback
 
@@ -102,4 +100,4 @@ Trong hình thức làm cá nhân, phạm vi chịu trách nhiệm bao phủ c�
 4. Platform và observability: gateway rate limit, Prometheus/Grafana và trace continuity.
 5. Trình bày: liên kết từng kết luận với file evidence, đồng thời công khai các mục `UNVERIFIED`.
 
-Các file JSON trong `evidence/` là căn cứ cho số liệu trong báo cáo. Những nội dung chưa có artifact tương ứng được giữ ở trạng thái chưa xác minh thay vì suy diễn thành kết quả đã đạt.
+`evidence/preflight-local.json` và `evidence/fast-suite.txt` là căn cứ của lần chạy hiện tại. Những nội dung chưa có artifact tương ứng được giữ ở trạng thái chưa xác minh thay vì suy diễn thành kết quả đã đạt.

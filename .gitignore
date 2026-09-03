@@ -4,5 +4,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
-evidence/
+evidence/*
+!evidence/README.md
+!evidence/fast-suite.txt
+!evidence/preflight-local.json
 readiness-report.json

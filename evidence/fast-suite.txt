@@ -1,0 +1,31 @@
+Student: Nguyễn Hữu Nhật Minh
+Student ID: 2A202601551
+Recorded at: 2026-09-03T21:38:23+07:00
+Commit tested: b8deaec8c7b809323087785c02d0e07f443eb741
+Environment: Python 3.11.9, browser-fallback, Docker daemon not running
+
+Command: .\.venv\Scripts\python.exe -m pytest starter-tests tests -q
+Result: PASS
+Output:
+........................................................................ [ 82%]
+...............                                                          [100%]
+87 passed in 15.14s
+
+Command: .\.venv\Scripts\ruff.exe check .
+Result: PASS
+Output: All checks passed!
+
+Command: .\.venv\Scripts\python.exe scripts\verify_matrix.py
+Result: PASS
+Output: OK    245 checks passed: contracts\integration-matrix.yaml matches the repository
+
+Command: .\.venv\Scripts\python.exe scripts\check_portability.py
+Result: PASS
+Output: OK    supported workflow is host-path and shell independent
+
+Command: .\.venv\Scripts\python.exe scripts\validate_manifests.py
+Result: PASS
+Output: Kubernetes and GitOps manifest contracts passed
+
+Live Docker/full-profile checks were not completed. IP01, IP02, IP04, IP07,
+end-to-end IP10, failure/recovery, and live GitOps drift/rollback remain UNVERIFIED.
